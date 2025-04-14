@@ -9,7 +9,8 @@ from time import time
 import scipy.spatial
 import matplotlib.pyplot as plt
 import numpy as np
-
+     
+     
 local_map = None
 local_origin = None
 local_resolution = None

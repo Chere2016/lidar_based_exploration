@@ -90,6 +90,7 @@ class OnlinePlanner:
         if self.svc.there_is_map: 
             self.trial = 0
             self.goal = np.array([goal.pose.position.x, goal.pose.position.y])  
+            rospy.loginfo("\n New Goal Received!...")
             if(not self.svc.is_valid(self.goal)):
                 rospy.logwarn("Goal Point is not valid , please try again")
                 msg = Bool()
@@ -152,7 +153,10 @@ class OnlinePlanner:
             env = np.array(gridmap.data).reshape(gridmap.info.height, gridmap.info.width).T
             origin = [gridmap.info.origin.position.x, gridmap.info.origin.position.y]
             self.svc.set(env, gridmap.info.resolution, origin)
-      
+
+            if self.current_pose is None:
+                rospy.logwarn("Current pose is not yet received.skipping gridmpa callback.")
+                return
             if(self.svc.is_valid(self.current_pose[0:2])):
                pass
                self.recovery_behavior() # move around to find a valid point
@@ -174,7 +178,7 @@ class OnlinePlanner:
 
                 if(not self.svc.check_path_smooth(total_path)):
                    
-                   rospy.loginfo("Replan agian current  path is in valid ")
+                   rospy.loginfo("Replanning .... current  path is invalidd")
                    
                    self.__send_commnd__(0, 0)
                    self.path = []
@@ -212,37 +216,49 @@ class OnlinePlanner:
             self.trial += 1
       
     def controller(self, event):
-        if len(self.path)> 0:
+        SAFE_GOAL_THRESHOLD = 0.25  # Accept goal if robot is within 25 cm
+
+        if len(self.path) > 0:
             distance_to_goal = self.distance_to_target(self.path[0])
-            if (distance_to_goal< self.tolorance):
+            
+            if distance_to_goal < self.tolorance:
                 del self.path[0]
-                if(len(self.path) == 0 ):
-                    rospy.loginfo("Goal Point Reached !")
-                    self.publish_trajectory(self.trajectory)
-                    total_path = self.trajectory_lenght()
-                    total_time = (rospy.Time.now() - self.start_time).to_sec()
-                    self.xk = np.block([[self.xk],[self.goal.reshape(2,1)]])
-                    self.publish_viewpoints()
-                   
-                    x = self.current_pose[0]
-                    y = self.current_pose[1]
-                    angle = self.current_pose[2]
-                    distance = 0.4
-                    # Calculate the next goal position
-                    goal_x = x + distance * math.cos(angle)
-                    goal_y = y + distance * math.sin(angle)
-                    if not self.svc.is_valid((goal_x, goal_y)):
-                        self.move_back()
-                    self.goal = None
-                    msg = Bool()    
-                    msg = True
-                    self.goal_reach.publish(msg)
-                    self.retry = 0
-                    self.v = 0
-                    self.w = 0
+
+                if len(self.path) == 0:
+                    final_dist_to_goal = self.distance_to_target(self.goal)
+                    rospy.loginfo(f"Final distance to goal: {final_dist_to_goal:.2f}")
+
+                    if final_dist_to_goal <= SAFE_GOAL_THRESHOLD:
+                        rospy.loginfo(f"Goal Reached ! ({self.goal[0]:.2f}, {self.goal[1]:.2f})")
+                        self.publish_trajectory(self.trajectory)
+                        self.xk = np.block([[self.xk], [self.goal.reshape(2, 1)]])
+                        self.publish_viewpoints()
+
+                        # forward goal for smoother motion (exploration)
+                        x = self.current_pose[0]
+                        y = self.current_pose[1]
+                        angle = self.current_pose[2]
+                        forward_dist = 0.4
+                        next_x = x + forward_dist * math.cos(angle)
+                        next_y = y + forward_dist * math.sin(angle)
+
+                        if not self.svc.is_valid((next_x, next_y)):
+                            self.move_back()
+
+                        self.goal = None
+                        msg = Bool()
+                        msg.data = True
+                        self.goal_reach.publish(msg)
+                        self.retry = 0
+                        self.v = 0
+                        self.w = 0
+                    else:
+                        rospy.logwarn("path ended but robot is still far from goal. skipping goal confirmation")
             else:
                 self.v, self.w = pure_p_control(self.current_pose, self.path[0])
+
         self.__send_commnd__(self.v, self.w)
+
         
     def __send_commnd__(self, v, w):
     
@@ -464,6 +480,6 @@ if __name__ == '__main__':
         is_rrt_star = bool(rospy.get_param("is_rrt_star")) 
     if rospy.has_param("is_unknown_valid"):
         is_unknown_valid = bool(rospy.get_param("is_unknown_valid"))
-    node = OnlinePlanner('/projected_map', '/odom', '/cmd_vel', np.array([-10.0, 10.0, -10.0, 10.0]), 
+    node = OnlinePlanner('/projected_map', '/turtlebot/odom_ground_truth', '/turtlebot/kobuki/commands/velocity', np.array([-10.0, 10.0, -10.0, 10.0]), 
                          0.2 , is_unknown_valid , is_rrt_star )
     rospy.spin()

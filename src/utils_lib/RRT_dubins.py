@@ -1,6 +1,9 @@
 #! /usr/bin/env python3
 
-# RRT* with Dubins path
+
+########################
+# RRT_Star using using Dubins path#
+#######################
 import numpy as np 
 from matplotlib import pyplot as plt 
 from PIL import Image 
@@ -325,7 +328,7 @@ class RRT:
                 break 
          
         if(self.goal_found):
-            print("max iteration reached")
+            print(" path successfully found to goal")
             return self.reconstract_db_path(), self.path    
         return [], self.get_tree()
 

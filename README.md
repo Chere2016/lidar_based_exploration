@@ -1,6 +1,6 @@
 # Lidar-Based Exploration
 
-This package implements a **sampling-based exploration strategy** using RRT or RRT* for mobile robots in simulated environments Stonefish.
+This package implements a **sampling-based exploration strategy** using RRT* for mobile robots in simulated environments Stonefish.
 
 ## 🌐 Project Structure
 
