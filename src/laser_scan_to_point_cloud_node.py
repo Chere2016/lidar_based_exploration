@@ -13,6 +13,7 @@ lp = lg.LaserProjection()
 pc_pub = rospy.Publisher("/cloud_in", PointCloud2, queue_size=1)
 
 
+
 def scan_cb(msg):
     pc2_msg = lp.projectLaser(msg)
     # print(pc2_msg)

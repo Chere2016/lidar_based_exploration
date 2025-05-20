@@ -14,3 +14,4 @@ roslaunch lidar_based_exploration stonefish.launch
 
 
 rosrun lidar_based_exploration sampling_exploration_node.py
+
