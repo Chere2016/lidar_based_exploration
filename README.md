@@ -1,4 +1,4 @@
-# Lidar-Based Exploration
+# Autonomous Exploration using 2D LiDAR with Dubins-RRT* Planning and Sampling-Based Goal Selection
 
 This ROS package implements an autonomous exploration system using **RRT\*** with **Dubins path constraints** and a **Pure Pursuit controller** for a mobile robot equipped with a 2D LiDAR. It is tested in the **Stonefish simulator** and supports **real-time exploration**, goal sampling, path planning, and trajectory execution.
 
@@ -18,24 +18,6 @@ This ROS package implements an autonomous exploration system using **RRT\*** wit
 The diagram below shows the data flow between the main components of the exploration system.
 
 ![System Architecture](planning%20flow%20chart.png)
-
-## Project Structure
-
-```
-lidar_based_exploration/
-├── launch/
-│   └── stonefish.launch                      # Main launch file
-├── RRT_dubins.py                             # RRT* with Dubins path planner
-├── online_planning.py                        # State checker, path generator, controllers
-├── turtlebot_online_path_planning_node.py    # Full online planning + control node
-├── sampling_based_exploration_node.py        # Exploration goal sampler
-├── laser_scan_to_point_cloud_node.py         # Converts Lidar scans to point cloud
-├── config/
-│   └── kobuki_cmd.perspective                # RQT config
-├── rviz/
-│   └── real.rviz                              # RViz setup
-└── README.md
-```
 
 
 ##  How to Run
