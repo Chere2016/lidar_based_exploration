@@ -5,13 +5,17 @@ import math
 
 
 # samples candidate goals
-def sample_candidate_goals(origin, resolution, map_shape, num_samples=200, min_clearance=0.22):
+def sample_candidate_goals(origin, resolution, map_shape, num_samples=200, min_clearance=0.22, bounds=None):
     """Randomly sample points within the known map area and filter close-to-obstacles."""
     goals = []
-    min_x = origin[0]
-    max_x = origin[0] + map_shape[0] * resolution
-    min_y = origin[1]
-    max_y = origin[1] + map_shape[1] * resolution
+    if bounds is None:
+        min_x = origin[0]
+        max_x = origin[0] + map_shape[0] * resolution
+        min_y = origin[1]
+        max_y = origin[1] + map_shape[1] * resolution
+    else:
+        min_x, max_x, min_y, max_y = bounds
+
 
     for _ in range(num_samples * 5):  # oversamples to improve diversity
         x = random.uniform(min_x, max_x)

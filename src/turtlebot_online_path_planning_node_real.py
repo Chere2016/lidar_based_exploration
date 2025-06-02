@@ -15,7 +15,7 @@ from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool
 from std_msgs.msg import Float64MultiArray
 import time
-from utils_lib.online_planning import StateValidityChecker, compute_path , wrap_angle, pure_p_control
+from utils_lib.online_planning_real import StateValidityChecker, compute_path , wrap_angle, pure_p_control
 from lidar_based_exploration.msg import GoalStatus
 class OnlinePlanner:
     # OnlinePlanner Constructor
@@ -60,8 +60,8 @@ class OnlinePlanner:
         self.trial = 0
         self.goal_done = False # prevents multiple goal publishing
         #Publishers
-        self.cmd_pub = rospy.Publisher('/turtlebot/kobuki/commands/wheel_velocities', Float64MultiArray, queue_size=1)
-        #self.cmd_pub = rospy.Publisher(cmd_vel_topic, Twist, queue_size=1)
+        #self.cmd_pub = rospy.Publisher('/turtlebot/kobuki/commands/wheel_velocities', Float64MultiArray, queue_size=1)
+        self.cmd_pub = rospy.Publisher(cmd_vel_topic, Twist, queue_size=1)
         # Publisher for visualizing the path to with rviz
         self.marker_pub = rospy.Publisher('~path_marker', Marker, queue_size=1)
         #self.marker_pub2 = rospy.Publisher('~path_marker_rrt', Marker, queue_size=1)
@@ -107,8 +107,9 @@ class OnlinePlanner:
                 msg = True
                 self.goal_reach.publish(msg)
             elif(not self.svc.is_valid(self.current_pose[0:2])):      
-                rospy.logwarn("Start Point is not valid , please try again")
-                self.recovery_behavior() # move around to find a valid point
+                #rospy.logwarn("Start Point is not valid , please try again")
+               pass
+                #self.recovery_behavior() # move around to find a valid point
             else :
                 msg = Bool()
                 msg = False
@@ -303,27 +304,27 @@ class OnlinePlanner:
 
         
     # Transform linear and angular velocity (v, w) into a Twist message and publish it
-    # def __send_commnd__(self, v, w):
-    #     cmd = Twist()
-    #     cmd.linear.x = np.clip(v, -self.v_max, self.v_max)
-    #     cmd.linear.y = 0
-    #     cmd.linear.z = 0
-    #     cmd.angular.x = 0
-    #     cmd.angular.y = 0
-    #     cmd.angular.z = np.clip(w, -self.w_max, self.w_max)
-    #     self.cmd_pub.publish(cmd)
-
-
     def __send_commnd__(self, v, w):
-    
-        move = Float64MultiArray() 
-        v_l = (2*v + w * self.wheel_base_distance/2) / ( self.wheel_radius)
-        v_r = (2*v - w * self.wheel_base_distance/2) / (self.wheel_radius) 
-        v_l = v_l/5
-        v_r = v_r/5
+        cmd = Twist()
+        cmd.linear.x = np.clip(v, -self.v_max, self.v_max)
+        cmd.linear.y = 0
+        cmd.linear.z = 0
+        cmd.angular.x = 0
+        cmd.angular.y = 0
+        cmd.angular.z = np.clip(w, -self.w_max, self.w_max)
+        self.cmd_pub.publish(cmd)
 
-        move.data = [v_l, v_r]            
-        self.cmd_pub.publish(move) 
+
+    # def __send_commnd__(self, v, w):
+    
+    #     move = Float64MultiArray() 
+    #     v_l = (2*v + w * self.wheel_base_distance/2) / ( self.wheel_radius)
+    #     v_r = (2*v - w * self.wheel_base_distance/2) / (self.wheel_radius) 
+    #     v_l = v_l/5
+    #     v_r = v_r/5
+
+    #     move.data = [v_l, v_r]            
+    #     self.cmd_pub.publish(move) 
       
     #draws the final smoothed path from the robot to the goal        
     def publish_path(self):
@@ -331,7 +332,7 @@ class OnlinePlanner:
         if len(self.path) > 1:
             # print("Publish path!")
             m = Marker()
-            m.header.frame_id = 'world_ned'
+            m.header.frame_id = 'odom'
             m.header.stamp = rospy.Time.now()
             m.id = 0
             m.type = Marker.LINE_STRIP
@@ -415,7 +416,7 @@ class OnlinePlanner:
     #         self.tree_pub.publish(m)
     def publish_trajectory(self , pose):
         marker = Marker()
-        marker.header.frame_id = "world_ned"  
+        marker.header.frame_id = "odom"  
         marker.header.stamp = rospy.Time.now()
         marker.ns = "trajectory"
         marker.id = 0
@@ -444,6 +445,6 @@ if __name__ == '__main__':
         is_rrt_star = bool(rospy.get_param("is_rrt_star")) 
     if rospy.has_param("is_unknown_valid"):
         is_unknown_valid = bool(rospy.get_param("is_unknown_valid"))
-    node = OnlinePlanner('/projected_map', '/turtlebot/odom_ground_truth', '/turtlebot/kobuki/commands/velocity', None, 
+    node = OnlinePlanner('/projected_map', '/turtlebot/kobuki/odom', '/turtlebot/kobuki/commands/velocity', np.array([-1.0, 2.0, -1.5, 1.5]), 
                          0.22 , is_unknown_valid , is_rrt_star )
     rospy.spin() # runs in a loop

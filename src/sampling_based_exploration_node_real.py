@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 from nav_msgs.msg import OccupancyGrid, Odometry
 from geometry_msgs.msg import PoseStamped
-from utils_lib.online_planning import StateValidityChecker, wrap_angle
+from utils_lib.online_planning_real import StateValidityChecker, wrap_angle
 from utils_lib import exploration_sampling as es
 from std_msgs.msg import Bool
 from visualization_msgs.msg import Marker
@@ -26,6 +26,7 @@ class SamplingExplorer:
         self.max_no_goal_cycles = 10 # waiting for failed attempts
 
         # ROS interfaces
+
         # State validity checker
         self.svc = StateValidityChecker(distance=0.22, is_unknown_valid=True)
         rospy.Subscriber("/goal_reached", Bool, self.goal_reached_callback)
@@ -33,7 +34,7 @@ class SamplingExplorer:
         self.samples_marker_pub = rospy.Publisher("/sampled_goals", Marker, queue_size=1)
         self.filtered_goals_pub = rospy.Publisher("/filtered_goals", Marker, queue_size=1)
         #For real
-        rospy.Subscriber('/turtlebot/odom_ground_truth', Odometry, self.odom_callback)
+        rospy.Subscriber('/turtlebot/kobuki/odom', Odometry, self.odom_callback)
         #rospy.Subscriber("/turtlebot/odom_ground_truth", Odometry, self.odom_callback)
         self.goal_pub = rospy.Publisher("/move_base_simple/goal", PoseStamped, queue_size=1)
         self.goal_marker_pub = rospy.Publisher("/goal_marker", Marker, queue_size=1)
@@ -80,7 +81,7 @@ class SamplingExplorer:
             rospy.loginfo_throttle(30, "Exploration is complete. No new goals will be sampled.")
             return
         if not (self.map_received and self.odom_received):
-            rospy.loginfo_throttle(5, "Waiting for map and odom...")
+            #rospy.loginfo_throttle(5, "Waiting for map and odom...")
             return
 
         if self.goal_sent:
@@ -89,7 +90,8 @@ class SamplingExplorer:
         rospy.loginfo("Sampling candidate goals...")
     
         # Sample goals
-        candidates = es.sample_candidate_goals(self.origin, self.resolution, self.map.shape, num_samples=50)
+        bounds = [-1.0, 2.0, -1.5, 1.5]
+        candidates = es.sample_candidate_goals(self.origin, self.resolution, self.map.shape, num_samples=50,bounds=bounds)
         valid_goals = [g for g in candidates if self.svc.is_valid(g)]
 
         if not valid_goals:
@@ -146,7 +148,7 @@ class SamplingExplorer:
 
     def publish_goal(self, goal):
         msg = PoseStamped()
-        msg.header.frame_id = "world_ned"
+        msg.header.frame_id = "odom"
         msg.header.stamp = rospy.Time.now()
         msg.pose.position.x = goal[0]
         msg.pose.position.y = goal[1]
@@ -156,7 +158,7 @@ class SamplingExplorer:
         self.publish_goal_marker(goal)
     def publish_goal_marker(self, goal):
         marker = Marker()
-        marker.header.frame_id = "world_ned"
+        marker.header.frame_id = "odom"
         marker.header.stamp = rospy.Time.now()
         marker.ns = "goal_marker"
         marker.id = 0
@@ -177,7 +179,7 @@ class SamplingExplorer:
 
     def publish_sampled_points(self, goals):
         marker = Marker()
-        marker.header.frame_id = "world_ned"
+        marker.header.frame_id = "odom"
         marker.header.stamp = rospy.Time.now()
         marker.ns = "sampled_goals"
         marker.id = 0
@@ -202,7 +204,7 @@ class SamplingExplorer:
 
     def publish_filtered_points(self, goals):
         marker = Marker()
-        marker.header.frame_id = "world_ned"
+        marker.header.frame_id = "odom"
         marker.header.stamp = rospy.Time.now()
         marker.ns = "filtered_goals"
         marker.id = 1

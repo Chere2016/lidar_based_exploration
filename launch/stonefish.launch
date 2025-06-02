@@ -5,7 +5,7 @@
         <remap from="/kobuki/sensors/rplidar" to="/turtlebot/kobuki/sensors/rplidar"/>
     </node>
     
-    <!--  Parameter Definitions (applies to next node) -->
+    <!--  Parameter Definitions -->
     <param name="is_unknown_valid" value="true"/>
     <param name="is_rrt_star" value="true"/>
 
@@ -20,7 +20,7 @@
     <param name="~base_frame_id" type="string" value="turtlebot/base_link"/>
     <node pkg="octomap_server" type="octomap_server_node" name="octomap" output="screen"/>
     <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui"
-        args="--perspective-file $(find pick_up_objects_task)/config/kobuki_cmd.perspective">
+        args="--perspective-file $(find lidar_based_exploration)/config/kobuki_cmd.perspective">
         <remap from="robot_description" to="/turtlebot/robot_description"/>
     </node>
     
