@@ -13,6 +13,11 @@ This ROS package implements an autonomous exploration system using **RRT\*** wit
 - Integrate with simulated or real TurtleBot via ROS.
 
 ---
+## System Architecture
+
+The diagram below shows the data flow between the main components of the exploration system.
+
+![System Architecture](planning%20flow%20chart.png)
 
 ## Project Structure
 
